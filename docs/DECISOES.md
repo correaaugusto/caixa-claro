@@ -154,6 +154,14 @@ O widget foi conferido no README do `react-pluggy-connect@2.12.0`: `<PluggyConne
 2. Para bancos reais, **liberar o uso em produção no painel da Pluggy** (normalmente exige contato comercial e contrato).
 3. O app mostra uma mensagem clara em português em vez do código do erro.
 
+### D19. Erro "Item was not sync successfully" com o banco de teste da Pluggy
+**O que aconteceu:** com o banco de teste da Pluggy selecionado, o widget devolveu essa mensagem genérica. Ela vem do próprio widget (servidores da Pluggy), não do nosso código. Significa que a conexão foi criada, mas o banco não terminou de enviar os dados. O motivo real fica em `item.executionStatus` e `item.error`, que o app descartava.
+
+**Decisão:**
+1. **Mostrar o motivo real** em português (senha de teste errada, código expirado, banco fora do ar…), junto com o código técnico para diagnóstico (`explicarFalhaItem`, em `src/lib/conexao.js`).
+2. **Pedir só o que o app usa:** `products={['ACCOUNTS', 'TRANSACTIONS']}`. Assim produtos extras que a conta em teste talvez não tenha (identidade, investimentos…) não derrubam a sincronização.
+3. **Aproveitar o que chegou:** se a execução terminou com `PARTIAL_SUCCESS`, o app sincroniza mesmo assim.
+
 ---
 
 ## 5. Como o extrato vira informação (sem digitar)

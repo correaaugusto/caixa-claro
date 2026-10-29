@@ -118,3 +118,10 @@ test('transação pendente só entra quando for confirmada', () => {
   const { dados } = importarExtrato(vazio(), [{ ...bruta('p', HOJE, false, 10, 'X'), pendente: true }], HOJE, null);
   assert.equal(dados.lancamentos.length, 0);
 });
+
+test('explica em português por que o banco não enviou os dados', async () => {
+  const { explicarFalhaItem } = await import('../src/lib/conexao.js');
+  assert.match(explicarFalhaItem({ executionStatus: 'INVALID_CREDENTIALS', error: { code: 'INVALID_CREDENTIALS', message: 'bad' } }), /usuário e a senha de teste.*INVALID_CREDENTIALS: bad/);
+  assert.match(explicarFalhaItem({ executionStatus: 'ERROR', error: { code: 'UNEXPECTED_ERROR', message: 'x' } }), /não terminou.*UNEXPECTED_ERROR: x/);
+  assert.equal(explicarFalhaItem(undefined), null);
+});

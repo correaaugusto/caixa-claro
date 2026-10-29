@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import Icone from './Icone.jsx';
-import { statusConexao, pedirTokenConexao } from '../lib/conexao.js';
+import { statusConexao, pedirTokenConexao, explicarFalhaItem } from '../lib/conexao.js';
 import { reais } from '../lib/formato.js';
 
 // O widget da Pluggy só é baixado quando o dono toca em "Conectar".
@@ -128,9 +128,13 @@ export default function ConexaoBanco({ dados, acoes, sincronizando }) {
               setToken(null);
               acoes.sincronizar({ itemId: item.id });
             }}
+            products={['ACCOUNTS', 'TRANSACTIONS']}
             onError={(e) => {
               setToken(null);
-              setErro(mensagemErroConexao(e?.message, servidor?.sandbox));
+              const item = e?.data?.item;
+              setErro(explicarFalhaItem(item) || mensagemErroConexao(e?.message, servidor?.sandbox));
+              // Se a conexão foi criada e parte dos dados chegou, aproveita o que veio.
+              if (item?.id && ['PARTIAL_SUCCESS', 'SUCCESS'].includes(item.executionStatus)) acoes.sincronizar({ itemId: item.id });
             }}
             onClose={() => setToken(null)}
             onEvent={(ev) => {

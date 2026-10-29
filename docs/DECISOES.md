@@ -256,7 +256,7 @@ O saldo do app passa a **bater com o saldo do banco**: `saldo do banco + o que f
 | Teste ponta a ponta no navegador | ✅ demonstração, Confira e sincronização automática ao abrir (com `/api` simulado) |
 | Service worker sem cache do `/api` (privacidade do extrato) | ✅ corrigido, encontrado no teste |
 | README e PDF do pitch | ✅ atualizados (PDF com o novo slide "Zero digitação") |
-| Envio desta versão ao GitHub | ⏳ aguardando confirmação |
+| Envio desta versão ao GitHub | ✅ feito |
 | Teste com a Pluggy de verdade (sandbox) | ⏳ precisa das chaves e de rede liberada (ver abaixo) |
 
 **Para ativar a conexão real depois do deploy:**

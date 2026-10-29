@@ -1,0 +1,13 @@
+{
+  "name": "Caixa Claro",
+  "short_name": "Caixa Claro",
+  "description": "Anote em 10 segundos e veja se o dinheiro vai faltar nos próximos 30 dias.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f6f4",
+  "theme_color": "#1c5cab",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

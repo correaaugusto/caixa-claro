@@ -78,6 +78,7 @@ export default function Contas({ dados, hoje, acoes }) {
                       <div className={`text-xs ${c.vencimento < hoje ? 'font-semibold text-critico' : 'text-tinta-3'}`}>
                         vence {quandoTexto(c.vencimento, hoje)} · {c.categoria}
                         {c.recorrente && ' · todo mês'}
+                        {c.auto && <span className="ml-1 rounded bg-marca-suave px-1.5 py-0.5 font-semibold text-marca">descoberta pelo banco</span>}
                       </div>
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-1">
@@ -106,6 +107,7 @@ export default function Contas({ dados, hoje, acoes }) {
               <li key={c.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
                 <Icone nome="ok" tamanho={18} className="text-bom" />
                 <span className="min-w-0 flex-1 truncate">{c.descricao}</span>
+                {c.pagaPeloBanco && <Icone nome="banco" tamanho={14} className="shrink-0 text-tinta-3" />}
                 <span className="text-xs text-tinta-3">{diaMes(c.pagaEm || c.vencimento)}</span>
                 <span className="num">{reais(c.valor)}</span>
               </li>

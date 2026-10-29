@@ -1,14 +1,17 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Icone from './componentes/Icone.jsx';
 import Inicio from './telas/Inicio.jsx';
 import Lancar from './telas/Lancar.jsx';
 import Contas from './telas/Contas.jsx';
 import Previsao from './telas/Previsao.jsx';
 import Ajustes from './telas/Ajustes.jsx';
+import Confira from './telas/Confira.jsx';
 import { carregar, salvar, novoId, DADOS_VAZIOS } from './lib/armazenamento.js';
 import { gerarDemo } from './lib/demo.js';
 import { hojeISO } from './lib/datas.js';
 import { pagarConta } from './lib/financas.js';
+import { importarExtrato, confirmarClassificacao } from './lib/banco.js';
+import { sincronizarBanco } from './lib/conexao.js';
 import { avisoDoDiaSeNecessario } from './lib/aviso.js';
 
 const ABAS = [
@@ -25,10 +28,16 @@ export default function App() {
   const [tela, setTela] = useState('inicio');
   const [tipoInicial, setTipoInicial] = useState('entrada');
   const [aviso, setAviso] = useState(null);
+  const [sincronizando, setSincronizando] = useState(false);
 
+  const dadosRef = useRef(dados);
+  dadosRef.current = dados;
   useEffect(() => salvar(dados), [dados]);
   useEffect(() => {
     avisoDoDiaSeNecessario(dados, hoje);
+    // Banco real conectado: busca o extrato sozinho ao abrir (se a última busca tiver mais de 1 h).
+    const banco = dados.config.banco;
+    if (banco?.itemId && !banco.demo && Date.now() - new Date(banco.atualizadoEm || 0).getTime() > 3600000) acoes.sincronizar();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -56,7 +65,38 @@ export default function App() {
         setAviso('Conta paga e registrada no caixa');
       },
       apagarConta(id) {
-        setDados((d) => ({ ...d, contas: d.contas.filter((c) => c.id !== id) }));
+        setDados((d) => {
+          const conta = d.contas.find((c) => c.id === id);
+          // conta descoberta automaticamente: não recriar a mesma série
+          const seriesIgnoradas = conta?.serie ? [...(d.seriesIgnoradas || []), conta.serie] : d.seriesIgnoradas;
+          return { ...d, seriesIgnoradas, contas: d.contas.filter((c) => c.id !== id) };
+        });
+      },
+      async sincronizar({ itemId, atualizarAgora = false } = {}) {
+        const alvo = itemId || dadosRef.current.config.banco?.itemId;
+        if (!alvo) return;
+        setSincronizando(true);
+        try {
+          const { transacoes, banco } = await sincronizarBanco(alvo, { atualizarAgora });
+          const atual = dadosRef.current;
+          // Saindo da demonstração para um banco real: começa limpo, mantendo nome e CPF do dono.
+          const base = atual.config.demo
+            ? { ...DADOS_VAZIOS, config: { ...DADOS_VAZIOS.config, nomeNegocio: atual.config.nomeNegocio, dono: atual.config.dono } }
+            : atual;
+          const r = importarExtrato(base, transacoes, hojeISO(), banco);
+          setDados(r.dados);
+          setAviso(r.novos ? `${r.novos} lançamento(s) novo(s) do banco` : 'Banco atualizado');
+        } catch (e) {
+          setAviso(e.message);
+        } finally {
+          setSincronizando(false);
+        }
+      },
+      desconectarBanco() {
+        setDados((d) => ({ ...d, config: { ...d.config, banco: undefined } }));
+      },
+      confirmar(lancamentoId, escolha) {
+        setDados((d) => confirmarClassificacao(d, lancamentoId, escolha));
       },
       salvarConfig(config) {
         setDados((d) => ({ ...d, config: { ...d.config, ...config } }));
@@ -79,7 +119,7 @@ export default function App() {
     [],
   );
 
-  const props = { dados, hoje, acoes };
+  const props = { dados, hoje, acoes, sincronizando };
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-lg flex-col">
@@ -102,9 +142,9 @@ export default function App() {
 
       {dados.config.demo && tela !== 'ajustes' && (
         <div className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl bg-marca-suave px-3 py-2 text-xs text-tinta-2">
-          <span>Dados de demonstração (simulados): pet shop de 1 pessoa, ~R$ 8 mil/mês.</span>
+          <span>Banco de demonstração (dados simulados): pet shop de 1 pessoa, ~R$ 8 mil/mês.</span>
           <button className="shrink-0 font-semibold text-marca underline" onClick={acoes.comecarDoZero}>
-            Usar os meus
+            Conectar o meu
           </button>
         </div>
       )}
@@ -115,6 +155,7 @@ export default function App() {
         {tela === 'contas' && <Contas {...props} />}
         {tela === 'previsao' && <Previsao {...props} />}
         {tela === 'ajustes' && <Ajustes {...props} />}
+        {tela === 'confira' && <Confira {...props} />}
       </main>
 
       {aviso && (

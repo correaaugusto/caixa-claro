@@ -2,9 +2,11 @@ import Icone from '../componentes/Icone.jsx';
 import { Semaforo, CartaoAlerta } from '../componentes/Status.jsx';
 import { alertas, resumoDoDia, saldoAtual, semaforo, totais } from '../lib/financas.js';
 import { mesDe, nomeMes } from '../lib/datas.js';
+import { paraRevisar } from '../lib/banco.js';
+import { tempoDesde } from '../componentes/ConexaoBanco.jsx';
 import { reais, reaisCurto } from '../lib/formato.js';
 
-export default function Inicio({ dados, hoje, acoes }) {
+export default function Inicio({ dados, hoje, acoes, sincronizando }) {
   const sem = semaforo(dados, hoje);
   const resumo = resumoDoDia(dados, hoje);
   const lista = alertas(dados, hoje).filter((a) => a.id !== 'amanha'); // "amanhã vence" já está no resumo
@@ -12,6 +14,8 @@ export default function Inicio({ dados, hoje, acoes }) {
   const doMes = totais(dados.lancamentos, `${mes}-01`, hoje);
   const saldo = saldoAtual(dados, hoje);
   const maxBarra = Math.max(doMes.lucro, doMes.retiradas, 1);
+  const banco = dados.config.banco;
+  const conferir = paraRevisar(dados);
 
   return (
     <div className="space-y-4">
@@ -19,6 +23,44 @@ export default function Inicio({ dados, hoje, acoes }) {
         <Semaforo sem={sem} />
       </button>
 
+      {banco ? (
+        <button
+          onClick={() => acoes.irPara('ajustes')}
+          className="flex w-full items-center gap-2 text-left text-xs text-tinta-3"
+        >
+          <Icone nome="banco" tamanho={16} />
+          <span className="min-w-0 flex-1 truncate">
+            {banco.nome} conectado · {sincronizando ? 'atualizando…' : `atualizado ${tempoDesde(banco.atualizadoEm)}`}
+          </span>
+          <span className="font-semibold text-marca">Atualizar</span>
+        </button>
+      ) : (
+        <button
+          onClick={() => acoes.irPara('ajustes')}
+          className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-marca p-4 text-left"
+        >
+          <Icone nome="banco" className="shrink-0 text-marca" />
+          <span className="text-sm">
+            <b className="text-marca">Conecte seu banco</b> e pare de anotar: vendas, gastos e contas entram sozinhos.
+          </span>
+        </button>
+      )}
+
+      {conferir.length > 0 && (
+        <button
+          onClick={() => acoes.irPara('confira')}
+          className="flex w-full items-center gap-3 rounded-2xl bg-atencao-fundo p-4 text-left"
+        >
+          <Icone nome="alerta" className="shrink-0 text-atencao-texto" />
+          <span className="min-w-0 flex-1 text-sm">
+            <b>Confira {conferir.length === 1 ? '1 lançamento' : `${conferir.length} lançamentos`} do banco</b>
+            <span className="block text-tinta-2">O app não teve certeza se é do negócio ou pessoal. 1 toque cada.</span>
+          </span>
+          <span className="font-semibold text-atencao-texto">Ver</span>
+        </button>
+      )}
+
+      {banco && <p className="text-xs font-semibold uppercase tracking-wide text-tinta-3">Anotar dinheiro vivo</p>}
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => acoes.irPara('lancar', 'entrada')}

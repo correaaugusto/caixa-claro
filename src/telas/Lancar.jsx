@@ -10,7 +10,7 @@ const TIPOS = [
   { id: 'retirada', rotulo: 'Pra mim', cor: 'bg-retirada' },
 ];
 
-const COR_TIPO = { entrada: 'text-entrada', saida: 'text-saida', retirada: 'text-retirada' };
+const COR_TIPO = { entrada: 'text-entrada', aporte: 'text-entrada', saida: 'text-saida', retirada: 'text-retirada' };
 
 // Meta: anotar em menos de 10 segundos -> valor + 1 toque na categoria + salvar.
 export default function Lancar({ dados, hoje, acoes, tipoInicial }) {
@@ -47,6 +47,14 @@ export default function Lancar({ dados, hoje, acoes, tipoInicial }) {
 
   return (
     <div className="space-y-4">
+      {dados.config.banco && (
+        <p className="flex gap-2 rounded-xl bg-marca-suave p-3 text-sm text-tinta-2">
+          <Icone nome="banco" tamanho={18} className="mt-0.5 shrink-0 text-marca" />
+          <span>
+            O que passa pelo <b>{dados.config.banco.nome}</b> entra sozinho. Anote aqui só o que for em <b>dinheiro vivo</b>.
+          </span>
+        </p>
+      )}
       <form onSubmit={salvar} className="cartao space-y-4 p-4">
         <div className="grid grid-cols-3 gap-1 rounded-xl bg-fundo p-1" role="tablist">
           {TIPOS.map((t) => (
@@ -151,12 +159,13 @@ export default function Lancar({ dados, hoje, acoes, tipoInicial }) {
               <li key={l.id} className="flex items-center gap-3 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{l.descricao || l.categoria}</div>
-                  <div className="text-xs text-tinta-3">
+                  <div className="flex items-center gap-1 text-xs text-tinta-3">
+                    {l.origem === 'banco' && <Icone nome="banco" tamanho={12} />}
                     {quandoTexto(l.data, hoje)} · {l.categoria}
                   </div>
                 </div>
                 <span className={`num text-sm font-semibold ${COR_TIPO[l.tipo]}`}>
-                  {l.tipo === 'entrada' ? '+' : '−'} {reais(l.valor)}
+                  {l.tipo === 'entrada' || l.tipo === 'aporte' ? '+' : '−'} {reais(l.valor)}
                 </span>
                 <button
                   onClick={() => acoes.apagarLancamento(l.id)}

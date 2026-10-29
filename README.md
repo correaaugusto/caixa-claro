@@ -4,6 +4,10 @@
 
 App web mobile-first (PWA: abre no celular como app) para o pequeno empresário que trabalha sozinho e anota no caderno. Foco único: **previsão de caixa + alerta diário**.
 
+**O dono não precisa digitar:** ele conecta o banco uma vez (Open Finance, via Pluggy) e vendas, gastos, retiradas e contas fixas passam a entrar sozinhos, já organizados. Só o dinheiro vivo é anotado à mão.
+
+📄 **Todas as decisões do projeto e o plano de implementação estão em [`docs/DECISOES.md`](docs/DECISOES.md).**
+
 ## Como rodar
 
 Precisa do Node.js 18 ou superior.
@@ -30,7 +34,22 @@ npm run build && npm run preview
 
 `npm test` roda os testes das regras financeiras. `npm run build` gera a versão final em `dist/`, que pode ser publicada em qualquer hospedagem estática (Netlify, Vercel, GitHub Pages).
 
-Na primeira abertura o app carrega uma **demonstração com dados simulados**: um pet shop de 1 pessoa com ~R$ 8 mil/mês, que é o perfil do "grupo B" da pesquisa. Em *Ajustes* dá para apagar tudo e começar com dados reais.
+Na primeira abertura o app carrega um **banco de demonstração conectado**, com dados simulados de um pet shop de 1 pessoa com ~R$ 8 mil/mês (perfil do "grupo B" da pesquisa). O extrato simulado passa pelo mesmo processamento da conexão real.
+
+### Conexão com bancos reais (Open Finance via Pluggy)
+
+A conexão real usa as funções em `api/`, que a Vercel publica junto com o site.
+
+1. Crie uma conta em [pluggy.ai](https://pluggy.ai) e copie o *Client ID* e o *Client Secret*.
+2. Na Vercel, abra **Project → Settings → Environment Variables** e cadastre:
+   - `PLUGGY_CLIENT_ID`
+   - `PLUGGY_CLIENT_SECRET`
+   - `PLUGGY_SANDBOX=1`, enquanto estiver testando com o banco de testes da Pluggy
+3. Faça um novo deploy. No app, toque em **Ajustes → Conectar meu banco**.
+
+Sem essas variáveis (ou rodando com `npm run dev`, que não executa as funções), o app oferece o banco de demonstração. Para testar as funções na sua máquina, use `vercel dev`.
+
+**Limitações do MVP:** a atualização não é instantânea (o app busca o extrato ao abrir e no botão "Atualizar agora") e ainda não há login. Os detalhes estão em `docs/DECISOES.md`, seções 4 e 7.
 
 ## Fluxo pedido no desafio
 
@@ -50,9 +69,15 @@ Perguntas do desafio e onde cada uma é respondida:
 - *O resultado está melhorando ou piorando?* → Alerta "Resultado piorando" + gráfico mensal
 - *Existe situação que exige atenção?* → Lista "Precisa de atenção"
 
-## Funcionalidades (5)
+## Funcionalidades
 
-1. **Lançamento rápido**: meta de menos de 10 segundos.
+0. **Conexão com o banco**: o extrato vira lançamentos organizados, sem digitar. O app:
+   - **classifica sozinho** (Pix de cliente → venda; CEMIG/SABESP/VIVO → contas; DAS → impostos; Pix para o CPF do dono → retirada pessoal);
+   - **descobre as contas fixas** e prevê a próxima;
+   - **dá baixa** quando o pagamento aparece no extrato.
+
+   Só o que o app não reconhece com segurança vai para o **"Confira"**: 1 toque, e a escolha vira regra.
+1. **Lançamento rápido** (para dinheiro vivo): meta de menos de 10 segundos.
 2. **Separação pessoal x empresa**: "Tirei dinheiro para mim" registra a retirada. O app compara *quanto o negócio lucrou* com *quanto você retirou*.
 3. **Contas a pagar com vencimento**: contas recorrentes se repetem sozinhas. Ao pagar, a saída entra no caixa e a conta do mês seguinte é criada.
 4. **Previsão de caixa de 30 dias**: gráfico do saldo dia a dia e semáforo.
@@ -96,17 +121,21 @@ Público-alvo: o **grupo B** (4 de 6), formado por quem fatura até R$ 30 mil e 
 
 ## O que fica fora (de propósito)
 
-Fiado e contas a receber (ninguém vende fiado), nota fiscal, estoque, folha de pagamento e integração bancária. O desafio pede foco e não um ERP.
+Fiado e contas a receber (ninguém vende fiado), nota fiscal, estoque e folha de pagamento. O desafio pede foco e não um ERP.
 
-**Evolução futura:** lançamento por WhatsApp ou voz ("gastei 50 de luz"), aviso diário pelo WhatsApp em horário fixo, calculadora de preço do serviço (dor "cobrar o valor certo"), foto do caderno virando lançamentos (OCR/IA) e sincronização na nuvem com login.
+**Evolução futura:** aviso em tempo real a cada transação (webhook + push), boletos registrados (DDA), lançamento por WhatsApp ou voz ("gastei 50 de luz"), aviso diário pelo WhatsApp em horário fixo, calculadora de preço do serviço (dor "cobrar o valor certo"), foto do caderno virando lançamentos (OCR/IA) e sincronização na nuvem com login.
 
 ## Tecnologia
 
-React 18 + Vite, Tailwind CSS 4, Recharts (gráficos). Os dados ficam salvos no próprio aparelho (`localStorage`), sem servidor e sem login no MVP. Há um service worker simples para funcionar offline e mostrar a notificação.
+React 18 + Vite, Tailwind CSS 4, Recharts (gráficos). Para o banco: `pluggy-sdk` no servidor (funções da Vercel) e `react-pluggy-connect` no celular.
+
+Os dados ficam salvos no próprio aparelho (`localStorage`). O servidor só faz a ponte com a Pluggy e não guarda o extrato. Há um service worker para funcionar offline e mostrar a notificação; ele nunca guarda respostas do `/api` em cache.
 
 ```
 src/
   lib/financas.js      regras: saldo, médias, projeção, semáforo, alertas
+  lib/banco.js         extrato -> lançamentos: classificação, contas fixas, baixa automática, Confira
+  lib/conexao.js       chamadas ao servidor (/api) para conectar e sincronizar o banco
   lib/demo.js          dados simulados (pet shop, grupo B da pesquisa)
   lib/datas.js         datas em AAAA-MM-DD (sem problema de fuso)
   lib/formato.js       moeda em R$ e leitura de "1.200,50"
@@ -114,13 +143,17 @@ src/
   lib/armazenamento.js salvar/carregar, exportar CSV
   telas/               Inicio, Lancar, Contas, Previsao, Ajustes
   componentes/         semáforo, alertas, ícones
-tests/financas.test.js testes das regras (node --test)
+api/                   funções do servidor: pluggy-status, pluggy-token, pluggy-sync
+docs/DECISOES.md       decisões e plano de implementação
+tests/                 26 testes (regras, processamento do banco, funções do servidor)
 ```
 
 ## Roteiro de demonstração para a banca (cerca de 3 min)
 
-1. **Início**: "O semáforo está vermelho: vai faltar dinheiro no dia X." Mostrar o resumo de hoje (amanhã vence o boleto) e os alertas: retirou mais do que lucrou, gasto alto com Manutenção, resultado piorando.
-2. **Lançar**: tocar em *Entrou*, digitar 350, tocar em *Serviços* e em *Anotar*. Leva menos de 10 segundos.
+1. **Início**: "O banco está conectado e ninguém digitou nada. O semáforo está vermelho: vai faltar dinheiro no dia X." Mostrar o resumo de hoje e os alertas: retirou mais do que lucrou, gasto alto com Manutenção, resultado piorando.
+   - Tocar em **Confira**: o app não sabia se o "Auto Center" era do negócio ou pessoal. 1 toque e ele aprende.
+   - Em **Contas**: aluguel, energia, água, internet e DAS foram **descobertos sozinhos** no extrato.
+2. **Lançar** (dinheiro vivo): tocar em *Entrou*, digitar 350, tocar em *Serviços* e em *Anotar*. Leva menos de 10 segundos.
 3. **Contas**: mostrar o total de 30/60/90 dias e pagar o boleto de amanhã. A conta sai da lista e entra no caixa.
 4. **Previsão**: no gráfico, a queda no dia do aluguel + boleto da ração. No *E se…?*, arrastar "Retirar menos por mês" e ver a linha verde e o semáforo mudarem. **Este é o momento da decisão.**
 5. Fechar com o argumento: "Ouvimos 6 pequenos empresários. Os que mais precisam anotam no caderno, misturam o dinheiro e só enxergam o próximo mês. 5 de 6 dariam nota máxima para um app que avisa se o caixa vai faltar. O Caixa Claro faz isso bem feito."

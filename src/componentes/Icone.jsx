@@ -17,6 +17,7 @@ const CAMINHOS = {
   voltar: 'M15 18l-6-6 6-6',
   repetir: 'M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3',
   calendario: 'M4 5h16v16H4zM4 10h16M9 3v4M15 3v4',
+  banco: 'M3 10l9-6 9 6M5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 21h18',
 };
 
 export default function Icone({ nome, tamanho = 22, className = '', traco = 2 }) {

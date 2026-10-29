@@ -1,21 +1,27 @@
 import { useState } from 'react';
 import Icone from '../componentes/Icone.jsx';
+import ConexaoBanco from '../componentes/ConexaoBanco.jsx';
 import { saldoAtual, textoAvisoDiario } from '../lib/financas.js';
 import { lerValor, reais } from '../lib/formato.js';
 import { exportarCSV } from '../lib/armazenamento.js';
 import { enviarAviso, pedirPermissao, permissaoAtual } from '../lib/aviso.js';
 
-export default function Ajustes({ dados, hoje, acoes }) {
+export default function Ajustes({ dados, hoje, acoes, sincronizando }) {
   const saldo = saldoAtual(dados, hoje);
   const [nome, setNome] = useState(dados.config.nomeNegocio);
   const [caixa, setCaixa] = useState(saldo.toFixed(2).replace('.', ','));
   const [permissao, setPermissao] = useState(permissaoAtual());
+  const [cpf, setCpf] = useState(dados.config.dono?.cpf || '');
 
   function salvar(e) {
     e.preventDefault();
     // O usuário informa quanto tem em caixa hoje; ajustamos o saldo inicial para bater.
     const ajuste = lerValor(caixa) - saldo;
-    acoes.salvarConfig({ nomeNegocio: nome.trim() || 'Meu negócio', saldoInicial: (dados.config.saldoInicial || 0) + ajuste });
+    acoes.salvarConfig({
+      nomeNegocio: nome.trim() || 'Meu negócio',
+      dono: { ...(dados.config.dono || {}), cpf: cpf.replace(/\D/g, '') },
+      ...(dados.config.banco ? {} : { saldoInicial: (dados.config.saldoInicial || 0) + ajuste }),
+    });
   }
 
   async function ativarAviso() {
@@ -35,6 +41,8 @@ export default function Ajustes({ dados, hoje, acoes }) {
 
   return (
     <div className="space-y-4">
+      <ConexaoBanco dados={dados} acoes={acoes} sincronizando={sincronizando} />
+
       <form onSubmit={salvar} className="cartao space-y-3 p-4">
         <h2 className="font-semibold">Seu negócio</h2>
         <label className="block text-xs text-tinta-3">
@@ -45,12 +53,26 @@ export default function Ajustes({ dados, hoje, acoes }) {
             className="mt-1 w-full rounded-xl border border-borda bg-transparent px-3 py-2.5 text-base text-tinta outline-none focus:border-marca"
           />
         </label>
+        {dados.config.banco ? (
+          <p className="text-xs text-tinta-3">O saldo vem do banco conectado (mais o dinheiro vivo que você anotar).</p>
+        ) : (
+          <label className="block text-xs text-tinta-3">
+            Quanto dinheiro tem no caixa hoje? (R$)
+            <input
+              inputMode="decimal"
+              value={caixa}
+              onChange={(e) => setCaixa(e.target.value)}
+              className="num mt-1 w-full rounded-xl border border-borda bg-transparent px-3 py-2.5 text-base text-tinta outline-none focus:border-marca"
+            />
+          </label>
+        )}
         <label className="block text-xs text-tinta-3">
-          Quanto dinheiro tem no caixa hoje? (R$)
+          Seu CPF (opcional): para reconhecer quando você transfere dinheiro do negócio para você
           <input
-            inputMode="decimal"
-            value={caixa}
-            onChange={(e) => setCaixa(e.target.value)}
+            inputMode="numeric"
+            placeholder="000.000.000-00"
+            value={cpf}
+            onChange={(e) => setCpf(e.target.value)}
             className="num mt-1 w-full rounded-xl border border-borda bg-transparent px-3 py-2.5 text-base text-tinta outline-none focus:border-marca"
           />
         </label>

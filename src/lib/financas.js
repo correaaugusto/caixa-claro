@@ -20,8 +20,10 @@ const LIMITE_GASTO_FORA_PADRAO = 1.3; // 130% da média dos meses anteriores
 
 const soma = (lista) => lista.reduce((t, l) => t + l.valor, 0);
 
+// tipos: 'entrada' (venda/serviço), 'saida' (gasto do negócio), 'retirada' (dinheiro para o dono)
+// e 'aporte' (dinheiro do dono colocado no caixa: aumenta o saldo, mas não é venda).
 function sinal(l) {
-  return l.tipo === 'entrada' ? l.valor : -l.valor;
+  return l.tipo === 'entrada' || l.tipo === 'aporte' ? l.valor : -l.valor;
 }
 
 export function saldoAtual(dados, hoje) {

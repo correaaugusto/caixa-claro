@@ -145,6 +145,15 @@ O widget foi conferido no README do `react-pluggy-connect@2.12.0`: `<PluggyConne
 
 **Tempo real "a cada transação":** é possível via webhook `transactions/created`, mas exige um **banco de dados** (para guardar o que chegou) e **notificação push** (para avisar o celular). Isso está planejado como fase 3 (seção 8). Para recebimentos, contas PJ com API própria (Inter PJ, Efí, Asaas, Mercado Pago) avisam cada Pix na hora. Fica como opção futura.
 
+### D18. Erro "TRIAL_CLIENT_ITEM_CREATE_NOT_ALLOWED" na primeira conexão real
+**O que aconteceu:** ao tentar conectar o banco, a Pluggy devolveu esse erro.
+**Interpretação:** pelo nome, uma conta da Pluggy em **período de teste (trial)** não pode criar conexões com bancos reais. Isso é uma limitação da conta, não do app. *Não foi confirmado na documentação da Pluggy, que está bloqueada pela rede deste ambiente.*
+
+**Decisão:**
+1. Para o MVP e a banca, usar os **bancos de teste da Pluggy**: `PLUGGY_SANDBOX=1` na Vercel faz o widget mostrar os conectores de teste.
+2. Para bancos reais, **liberar o uso em produção no painel da Pluggy** (normalmente exige contato comercial e contrato).
+3. O app mostra uma mensagem clara em português em vez do código do erro.
+
 ---
 
 ## 5. Como o extrato vira informação (sem digitar)

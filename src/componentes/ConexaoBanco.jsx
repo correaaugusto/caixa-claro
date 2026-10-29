@@ -6,6 +6,16 @@ import { reais } from '../lib/formato.js';
 // O widget da Pluggy só é baixado quando o dono toca em "Conectar".
 const PluggyConnect = lazy(() => import('react-pluggy-connect').then((m) => ({ default: m.PluggyConnect })));
 
+// Erros conhecidos da Pluggy traduzidos para o dono do negócio.
+export function mensagemErroConexao(texto, sandbox) {
+  const t = String(texto || '');
+  if (t.includes('TRIAL_CLIENT_ITEM_CREATE_NOT_ALLOWED'))
+    return sandbox
+      ? 'A conta da Pluggy deste app está em período de teste: só os bancos de teste da Pluggy podem ser conectados. Escolha um banco de teste na lista.'
+      : 'A conta da Pluggy deste app está em período de teste e ainda não pode conectar bancos reais. Ative os bancos de teste (PLUGGY_SANDBOX=1) ou libere o uso em produção no painel da Pluggy.';
+  return t || 'A conexão não foi concluída';
+}
+
 export function tempoDesde(iso) {
   if (!iso) return '';
   const min = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -30,7 +40,7 @@ export default function ConexaoBanco({ dados, acoes, sincronizando }) {
     try {
       setToken(await pedirTokenConexao(itemId));
     } catch (e) {
-      setErro(e.message);
+      setErro(mensagemErroConexao(e.message, servidor?.sandbox));
     }
   }
 
@@ -120,9 +130,14 @@ export default function ConexaoBanco({ dados, acoes, sincronizando }) {
             }}
             onError={(e) => {
               setToken(null);
-              setErro(e?.message || 'A conexão não foi concluída');
+              setErro(mensagemErroConexao(e?.message, servidor?.sandbox));
             }}
             onClose={() => setToken(null)}
+            onEvent={(ev) => {
+              // o erro de conta em teste pode chegar só como evento do widget
+              if (JSON.stringify(ev || {}).includes('TRIAL_CLIENT_ITEM_CREATE_NOT_ALLOWED'))
+                setErro(mensagemErroConexao('TRIAL_CLIENT_ITEM_CREATE_NOT_ALLOWED', servidor?.sandbox));
+            }}
           />
         </Suspense>
       )}

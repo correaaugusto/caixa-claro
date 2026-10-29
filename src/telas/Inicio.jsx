@@ -34,7 +34,13 @@ export default function Inicio({ dados, hoje, acoes, sincronizando }) {
           </span>
           <span className="font-semibold text-marca">Atualizar</span>
         </button>
-      ) : (
+      ) : null}
+      {banco && (
+        <button onClick={() => acoes.irPara('simular')} className="-mt-2 block text-xs font-semibold text-marca">
+          + Simular movimento do banco (apresentação)
+        </button>
+      )}
+      {!banco && (
         <button
           onClick={() => acoes.irPara('ajustes')}
           className="flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-marca p-4 text-left"

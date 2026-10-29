@@ -49,6 +49,10 @@ A conexão real usa as funções em `api/`, que a Vercel publica junto com o sit
 
 Sem essas variáveis (ou rodando com `npm run dev`, que não executa as funções), o app oferece o banco de demonstração. Para testar as funções na sua máquina, use `vercel dev`.
 
+### Modo apresentação (simular movimentos do banco)
+
+Com um banco conectado (real, de teste ou de demonstração), abra **Ajustes → Modo apresentação**. Lá você cria Pix recebido, Pix enviado, boleto pago, retirada e gasto pessoal, além de 3 meses de histórico. Tudo passa pelo mesmo processamento do extrato real e fica marcado como *simulado*. "Apagar movimentos simulados" desfaz tudo.
+
 **Limitações do MVP:** a atualização não é instantânea (o app busca o extrato ao abrir e no botão "Atualizar agora") e ainda não há login. Os detalhes estão em `docs/DECISOES.md`, seções 4 e 7.
 
 ## Fluxo pedido no desafio
@@ -136,6 +140,7 @@ src/
   lib/financas.js      regras: saldo, médias, projeção, semáforo, alertas
   lib/banco.js         extrato -> lançamentos: classificação, contas fixas, baixa automática, Confira
   lib/conexao.js       chamadas ao servidor (/api) para conectar e sincronizar o banco
+  lib/simulador.js     modo apresentação: movimentos simulados no formato do extrato
   lib/demo.js          dados simulados (pet shop, grupo B da pesquisa)
   lib/datas.js         datas em AAAA-MM-DD (sem problema de fuso)
   lib/formato.js       moeda em R$ e leitura de "1.200,50"
@@ -145,7 +150,7 @@ src/
   componentes/         semáforo, alertas, ícones
 api/                   funções do servidor: pluggy-status, pluggy-token, pluggy-sync
 docs/DECISOES.md       decisões e plano de implementação
-tests/                 26 testes (regras, processamento do banco, funções do servidor)
+tests/                 35 testes (regras, processamento do banco, funções do servidor)
 ```
 
 ## Roteiro de demonstração para a banca (cerca de 3 min)

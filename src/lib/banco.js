@@ -169,7 +169,9 @@ export function classificar(b, { regras = {}, dono = {} } = {}) {
 // banco: { nome, saldo, titular, documento, itemId } -> saldo do app passa a bater com o banco.
 export function importarExtrato(dados, brutas, hoje, banco = null) {
   const jaTem = new Set(dados.lancamentos.map((l) => l.idExterno).filter(Boolean));
-  const dono = { ...(banco ? { nome: banco.titular, documento: banco.documento } : {}), ...(dados.config.dono || {}) };
+  // Titular da conta conectada (guardado na conexão) + CPF informado pelo dono em Ajustes.
+  const titular = banco || dados.config.banco || {};
+  const dono = { nome: titular.titular, documento: titular.documento, ...(dados.config.dono || {}) };
   const regras = dados.regras || {};
   const novos = [];
   for (const b of brutas) {
@@ -188,6 +190,8 @@ export function importarExtrato(dados, brutas, hoje, banco = null) {
       chave: chaveDe(b),
       motivo: c.motivo,
       revisar: c.confianca === 'baixa' && diferencaDias(b.data, hoje) <= DIAS_PARA_REVISAR,
+      ...(b.simulado ? { simulado: true } : {}),
+      ...(b.historico ? { historico: true } : {}),
     });
   }
 
@@ -199,7 +203,9 @@ export function importarExtrato(dados, brutas, hoje, banco = null) {
 
   if (banco) {
     const somaBanco = resultado.lancamentos
-      .filter((l) => l.origem === 'banco' && l.data <= hoje)
+      // Movimentos simulados "ao vivo" (modo apresentação) não existem no banco: ficam fora da conta do saldo real.
+      // O histórico simulado representa o passado, que já está dentro do saldo do banco: entra na conta.
+      .filter((l) => l.origem === 'banco' && (!l.simulado || l.historico) && l.data <= hoje)
       .reduce((t, l) => t + (l.tipo === 'entrada' || l.tipo === 'aporte' ? l.valor : -l.valor), 0);
     resultado.config = {
       ...resultado.config,
@@ -211,6 +217,8 @@ export function importarExtrato(dados, brutas, hoje, banco = null) {
         itemId: banco.itemId ?? resultado.config.banco?.itemId,
         demo: banco.demo || false,
         saldo: banco.saldo,
+        titular: banco.titular ?? resultado.config.banco?.titular,
+        documento: banco.documento ?? resultado.config.banco?.documento,
         atualizadoEm: banco.atualizadoEm || new Date().toISOString(),
       },
     };
@@ -272,7 +280,7 @@ export function detectarContasRecorrentes(dados, hoje) {
 // ---------- 4) baixa automática ----------
 
 // Uma conta em aberto é dada como paga quando aparece no extrato uma saída do mesmo
-// favorecido (ou com o valor exato) até 10 dias antes ou depois do vencimento.
+// favorecido (até 30 dias antes ou 10 depois do vencimento) ou com o valor exato (±10 dias).
 // Se o dono já tinha tocado em "Pagar" à mão, o lançamento manual é trocado pelo do banco
 // (assim o pagamento não conta duas vezes).
 export function conciliarContas(dados) {
@@ -280,17 +288,19 @@ export function conciliarContas(dados) {
   let contas = [...dados.contas];
   const usados = new Set(lancamentos.filter((l) => l.origem === 'banco' && l.contaId && !String(l.contaId).startsWith('auto:')).map((l) => l.id));
 
-  const casa = (l, conta, ref) =>
-    l.origem === 'banco' &&
-    l.tipo === 'saida' &&
-    !usados.has(l.id) &&
-    Math.abs(diferencaDias(ref, l.data)) <= 10 &&
-    ((conta.chave && l.chave === conta.chave && Math.abs(l.valor - conta.valor) <= conta.valor * 0.2) || Math.abs(l.valor - conta.valor) < 0.01);
+  // Mesmo favorecido: aceita pagamento antecipado em até 30 dias. Só pelo valor exato: até 10 dias.
+  const casa = (l, conta, ref) => {
+    if (l.origem !== 'banco' || l.tipo !== 'saida' || usados.has(l.id)) return false;
+    const dias = diferencaDias(ref, l.data); // negativo = pago antes da data de referência
+    const mesmoFavorecido = conta.chave && l.chave === conta.chave && Math.abs(l.valor - conta.valor) <= conta.valor * 0.2;
+    if (mesmoFavorecido) return dias >= -30 && dias <= 10;
+    return Math.abs(l.valor - conta.valor) < 0.01 && Math.abs(dias) <= 10;
+  };
 
   for (let i = 0; i < contas.length; i++) {
     const conta = contas[i];
     if (!conta.paga) {
-      const l = lancamentos.find((x) => casa(x, conta, conta.vencimento) && x.data >= somarDias(conta.vencimento, -10));
+      const l = lancamentos.find((x) => casa(x, conta, conta.vencimento));
       if (!l) continue;
       usados.add(l.id);
       lancamentos = lancamentos.map((x) => (x.id === l.id ? { ...x, contaId: conta.id } : x));

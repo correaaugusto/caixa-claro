@@ -162,6 +162,29 @@ O widget foi conferido no README do `react-pluggy-connect@2.12.0`: `<PluggyConne
 2. **Pedir só o que o app usa:** `products={['ACCOUNTS', 'TRANSACTIONS']}`. Assim produtos extras que a conta em teste talvez não tenha (identidade, investimentos…) não derrubam a sincronização.
 3. **Aproveitar o que chegou:** se a execução terminou com `PARTIAL_SUCCESS`, o app sincroniza mesmo assim.
 
+### D20. Modo apresentação: simular movimentos do banco
+**Contexto:** a conexão com o banco de teste da Pluggy funcionou ("Pluggy Bank Business"), mas ele traz poucas transações e não deixa fazer Pix. Faltavam exemplos para a apresentação: conta paga, Pix recebido, Pix enviado.
+
+**Decisão:** criar uma tela **"Simular movimento do banco"** (em Ajustes → Modo apresentação, ou no link da tela inicial). Cada botão cria uma transação **no mesmo formato do extrato** e ela passa pelo **mesmo processamento** (`importarExtrato`):
+
+| Botão | O que o app faz sozinho |
+|---|---|
+| Pix recebido de cliente | vira **venda** |
+| Pix enviado ao fornecedor | vira **gasto do negócio (Fornecedor)** |
+| Boleto pago (próxima conta) | **dá baixa** na próxima conta a pagar |
+| Pix para mim (retirada) | vira **retirada pessoal**, porque o favorecido é o titular da conta |
+| Gasto pessoal no cartão | vai para o **"Confira"** |
+| Gerar 3 meses de histórico | gráficos + **contas fixas descobertas** (aluguel, energia, água, internet, DAS) |
+
+**Regras para a apresentação continuar honesta e consistente:**
+- Tudo sai marcado como **"simulado"** na lista de lançamentos.
+- **Movimentos "ao vivo"** mudam o saldo, como uma transação nova mudaria.
+- O **histórico** é passado, que já está dentro do saldo do banco: **não muda o saldo de hoje**, nem depois de sincronizar de novo.
+- **"Apagar movimentos simulados"** volta exatamente ao estado de antes da primeira simulação.
+- Se o celular permitir notificações, cada simulação mostra uma notificação, como seria o aviso em tempo real da fase 3.
+
+**Ajuste junto (baixa automática):** com o **mesmo favorecido**, o pagamento antecipado é aceito até **30 dias antes** do vencimento. Só pelo valor exato, continua ±10 dias. Na vida real o dono também paga antes.
+
 ---
 
 ## 5. Como o extrato vira informação (sem digitar)
@@ -202,7 +225,7 @@ Nesse caso o app cria sozinho a **próxima conta**, com vencimento previsto. Iss
 - Se o dono apagar uma conta detectada, aquela série não é recriada.
 
 ### 5.4 Baixa automática
-- Uma conta em aberto é marcada como **paga** quando aparece no extrato uma saída do mesmo favorecido (ou com o valor exato) até 10 dias antes ou depois do vencimento.
+- Uma conta em aberto é marcada como **paga** quando aparece no extrato uma saída do mesmo favorecido (de 30 dias antes até 10 depois do vencimento) ou com o valor exato (±10 dias).
 - Se for recorrente, a do mês seguinte é criada.
 - **Sem duplicar:** se o dono já tinha tocado em "Pagar" à mão, o lançamento manual é **trocado** pelo do banco.
 

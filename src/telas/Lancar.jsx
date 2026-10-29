@@ -162,6 +162,7 @@ export default function Lancar({ dados, hoje, acoes, tipoInicial }) {
                   <div className="flex items-center gap-1 text-xs text-tinta-3">
                     {l.origem === 'banco' && <Icone nome="banco" tamanho={12} />}
                     {quandoTexto(l.data, hoje)} · {l.categoria}
+                    {l.simulado && <span className="ml-1 rounded bg-atencao-fundo px-1 font-semibold text-atencao-texto">simulado</span>}
                   </div>
                 </div>
                 <span className={`num text-sm font-semibold ${COR_TIPO[l.tipo]}`}>

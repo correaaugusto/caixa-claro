@@ -42,6 +42,18 @@ export default function Ajustes({ dados, hoje, acoes, sincronizando }) {
   return (
     <div className="space-y-4">
       <ConexaoBanco dados={dados} acoes={acoes} sincronizando={sincronizando} />
+      {dados.config.banco && (
+        <button
+          onClick={() => acoes.irPara('simular')}
+          className="flex w-full items-center justify-between rounded-2xl border-2 border-dashed border-marca px-4 py-3 text-left"
+        >
+          <span>
+            <b className="text-marca">Modo apresentação</b>
+            <span className="block text-sm text-tinta-2">Simular Pix recebido, Pix enviado, boleto pago…</span>
+          </span>
+          <Icone nome="mais" className="text-marca" />
+        </button>
+      )}
 
       <form onSubmit={salvar} className="cartao space-y-3 p-4">
         <h2 className="font-semibold">Seu negócio</h2>

@@ -6,12 +6,15 @@ import Contas from './telas/Contas.jsx';
 import Previsao from './telas/Previsao.jsx';
 import Ajustes from './telas/Ajustes.jsx';
 import Confira from './telas/Confira.jsx';
+import Simular from './telas/Simular.jsx';
 import { carregar, salvar, novoId, DADOS_VAZIOS } from './lib/armazenamento.js';
 import { gerarDemo } from './lib/demo.js';
 import { hojeISO } from './lib/datas.js';
 import { pagarConta } from './lib/financas.js';
 import { importarExtrato, confirmarClassificacao } from './lib/banco.js';
 import { sincronizarBanco } from './lib/conexao.js';
+import { criarTransacaoSimulada, historicoSimulado } from './lib/simulador.js';
+import { reais } from './lib/formato.js';
 import { avisoDoDiaSeNecessario } from './lib/aviso.js';
 
 const ABAS = [
@@ -20,6 +23,26 @@ const ABAS = [
   { id: 'contas', rotulo: 'Contas', icone: 'contas' },
   { id: 'previsao', rotulo: 'Previsão', icone: 'previsao' },
 ];
+
+// Antes da primeira simulação, guarda uma cópia dos dados para "Apagar movimentos simulados" voltar exatamente ao que era.
+function guardarAntesDaSimulacao(atual, novo) {
+  novo.semSimulacao = atual.semSimulacao || { ...atual, semSimulacao: undefined };
+}
+
+const TEXTO_TIPO = { entrada: 'Venda', aporte: 'Dinheiro do dono', saida: 'Gasto do negócio', retirada: 'Retirada pessoal' };
+function explicarClassificacao(l) {
+  if (l.revisar) return `Foi para o "Confira": ${l.motivo.toLowerCase()}`;
+  return `Classificado sozinho como ${TEXTO_TIPO[l.tipo]}${l.tipo === 'saida' ? ` (${l.categoria})` : ''}: ${l.motivo.toLowerCase()}`;
+}
+
+// Simula o aviso que, em produção, chegaria a cada transação (fase 3: webhook + push).
+function notificar(titulo, corpo) {
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') new Notification(titulo, { body: corpo, icon: '/icone.svg' });
+  } catch {
+    // sem suporte a notificação: o resultado aparece na tela
+  }
+}
 
 export default function App() {
   const hoje = hojeISO();
@@ -92,6 +115,42 @@ export default function App() {
           setSincronizando(false);
         }
       },
+      // ----- modo apresentação -----
+      simular(tipo, personalizado) {
+        const atual = dadosRef.current;
+        const hojeAgora = hojeISO();
+        const bruta = criarTransacaoSimulada(tipo, atual, hojeAgora, personalizado);
+        if (!bruta)
+          return { ok: false, titulo: 'Nenhuma conta a pagar nos próximos dias', linhas: ['Gere o histórico (o app descobre as contas fixas) ou cadastre um boleto em Contas.'] };
+        const r = importarExtrato(atual, [bruta], hojeAgora);
+        guardarAntesDaSimulacao(atual, r.dados);
+        setDados(r.dados);
+        const l = r.dados.lancamentos.find((x) => x.idExterno === bruta.idExterno);
+        const pagas = r.dados.contas.filter((c) => c.paga && !atual.contas.find((x) => x.id === c.id)?.paga);
+        const linhas = [explicarClassificacao(l), ...pagas.map((c) => `Conta "${c.descricao}" marcada como paga sozinha`)];
+        const titulo = `${bruta.credito ? 'Entrou' : 'Saiu'} ${reais(l.valor)}: ${l.descricao}`;
+        notificar(titulo, linhas[0]);
+        return { ok: true, titulo, linhas };
+      },
+      gerarHistorico() {
+        const atual = dadosRef.current;
+        const brutas = historicoSimulado(atual, hojeISO());
+        // Passado já está no saldo do banco: reimporta com o mesmo saldo para ele não mudar.
+        const r = importarExtrato(atual, brutas, hojeISO(), atual.config.banco);
+        guardarAntesDaSimulacao(atual, r.dados);
+        setDados(r.dados);
+        const fixas = r.dados.contas.filter((c) => c.auto && !c.paga).map((c) => c.descricao);
+        return {
+          ok: true,
+          titulo: `${r.novos} movimentos de 3 meses importados`,
+          linhas: [`Contas fixas descobertas sozinhas: ${fixas.join(', ') || 'nenhuma'}`, 'Veja os gráficos em Previsão e as contas em Contas'],
+        };
+      },
+      limparSimuladas() {
+        const antes = dadosRef.current.semSimulacao;
+        setDados((d) => (antes ? { ...antes } : { ...d, lancamentos: d.lancamentos.filter((l) => !l.simulado) }));
+        setAviso('Movimentos simulados apagados');
+      },
       desconectarBanco() {
         setDados((d) => ({ ...d, config: { ...d.config, banco: undefined } }));
       },
@@ -156,6 +215,7 @@ export default function App() {
         {tela === 'previsao' && <Previsao {...props} />}
         {tela === 'ajustes' && <Ajustes {...props} />}
         {tela === 'confira' && <Confira {...props} />}
+        {tela === 'simular' && <Simular {...props} />}
       </main>
 
       {aviso && (

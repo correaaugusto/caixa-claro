@@ -32,13 +32,14 @@ const FIXAS = [
   { descricao: 'PAGAMENTO DAS SIMPLES NACIONAL', valor: 76, dia: 20 },
 ];
 
-export function gerarExtratoDemo(hoje) {
+// dono: quem recebe os Pix de retirada (por padrão, o dono fictício da demonstração).
+export function gerarExtratoDemo(hoje, dono = DONO_DEMO) {
   const rnd = aleatorio(Number(hoje.replaceAll('-', '')));
   let seq = 0;
   const brutas = [];
   const add = (data, credito, valor, descricao, contraparte = null) =>
     brutas.push({ idExterno: `demo-${++seq}`, data, credito, valor: Math.round(valor * 100) / 100, descricao, contraparte });
-  const pixDono = () => ({ nome: DONO_DEMO.nome, documento: DONO_DEMO.documento });
+  const pixDono = () => ({ nome: dono.nome || '', documento: dono.documento || '' });
 
   const mesAtual = mesDe(hoje);
   const inicio = `${mesAnterior(mesAtual, 3)}-01`;
@@ -55,7 +56,7 @@ export function gerarExtratoDemo(hoje) {
     }
     if (semana === 1) add(d, false, 520 + rnd() * 180, 'PIX ENVIADO DISTRIBUIDORA PET MAIS LTDA', { nome: 'DISTRIBUIDORA PET MAIS LTDA', documento: '22.333.444/0001-55' });
     // O dono tira dinheiro do caixa por Pix para a própria conta
-    if (semana !== 0 && rnd() < 0.4) add(d, false, 120 + rnd() * 160, 'PIX ENVIADO JOAO PEREIRA DA SILVA', pixDono());
+    if (semana !== 0 && rnd() < 0.4) add(d, false, 120 + rnd() * 160, `PIX ENVIADO ${dono.nome || 'TITULAR'}`, pixDono());
     // Gastos pessoais pagos com o cartão da empresa (o app sugere "pessoal" e pede confirmação)
     if (rnd() < 0.08) add(d, false, 25 + rnd() * 60, rnd() < 0.5 ? 'COMPRA CARTAO DROGARIA SAO PAULO' : 'COMPRA CARTAO IFOOD *RESTAURANTE', null);
     if (rnd() < 0.04) add(d, false, 40 + rnd() * 60, 'COMPRA CARTAO FERRAGENS SAO JORGE', null);
@@ -68,7 +69,7 @@ export function gerarExtratoDemo(hoje) {
   const dia1 = `${mesAtual}-01`;
   const quandoNoMes = (n) => (somarDias(dia1, n) <= hoje ? somarDias(dia1, n) : hoje);
   add(quandoNoMes(3), false, 480, 'PIX ENVIADO ASSISTENCIA TECNICA ELETROPET', { nome: 'ASSISTENCIA TECNICA ELETROPET', documento: '33.444.555/0001-66' });
-  add(quandoNoMes(5), false, 1400, 'PIX ENVIADO JOAO PEREIRA DA SILVA', pixDono());
+  add(quandoNoMes(5), false, 1400, `PIX ENVIADO ${dono.nome || 'TITULAR'}`, pixDono());
   add(somarDias(hoje, -2), false, 189.9, 'PIX ENVIADO AUTO CENTER BOA VIAGEM', { nome: 'AUTO CENTER BOA VIAGEM', documento: '44.555.666/0001-77' });
   return brutas.sort((a, b) => a.data.localeCompare(b.data));
 }

@@ -260,7 +260,9 @@ export function detectarContasRecorrentes(dados, hoje) {
     const serie = `auto:${chave}`;
     if (ignoradas.has(serie)) continue;
     const meses = new Set(itens.map((l) => mesDe(l.data)));
-    if (meses.size < 2 || itens.length > meses.size) continue; // precisa ser 1 vez por mês
+    if (meses.size < 2 || itens.length > meses.size) continue; // precisa ser 1 vez por mês…
+    const ordem = [...meses].map((m) => Number(m.slice(0, 4)) * 12 + Number(m.slice(5, 7))).sort((a, b) => a - b);
+    if (ordem.some((m, i) => i > 0 && m - ordem[i - 1] !== 1)) continue; // …em meses seguidos
     const valores = itens.map((l) => l.valor).sort((a, b) => a - b);
     const mediana = valores[Math.floor(valores.length / 2)];
     if (valores.some((v) => Math.abs(v - mediana) > mediana * 0.2)) continue;
@@ -306,7 +308,8 @@ export function conciliarContas(dados) {
     if (l.origem !== 'banco' || l.tipo !== 'saida' || usados.has(l.id)) return false;
     const dias = diferencaDias(ref, l.data); // negativo = pago antes da data de referência
     const mesmoFavorecido = conta.chave && l.chave === conta.chave && Math.abs(l.valor - conta.valor) <= conta.valor * 0.2;
-    if (mesmoFavorecido) return dias >= -30 && dias <= 10;
+    // Até 30 dias antes, mas depois do vencimento do mês anterior (senão o pagamento do mês passado quitaria esta conta).
+    if (mesmoFavorecido) return dias >= -30 && dias <= 10 && l.data > somarMeses(ref, -1);
     return Math.abs(l.valor - conta.valor) < 0.01 && Math.abs(dias) <= 10;
   };
 

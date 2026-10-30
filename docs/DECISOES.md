@@ -197,6 +197,13 @@ O widget foi conferido no README do `react-pluggy-connect@2.12.0`: `<PluggyConne
 
 A tela **Início** ganhou o bloco **"Últimas movimentações"** (as 5 últimas, com "Ver extrato"). O resultado do simulador leva direto ao extrato.
 
+### D22. Dois ajustes na detecção de contas, encontrados ao portar para a API em C#
+Ao reescrever as regras em C# (repositório **caixa-claro-api**), os testes revelaram dois erros que também existiam aqui:
+1. **O pagamento do mês passado quitava a conta fixa deste mês.** A janela de pagamento antecipado (30 dias) alcançava o pagamento do ciclo anterior. **Correção:** com o mesmo favorecido, o pagamento precisa ser **depois do vencimento do mês anterior**.
+2. **Gasto repetido em meses não seguidos virava conta fixa** (ex.: um conserto a cada 3 meses). **Correção:** a detecção exige **meses seguidos**.
+
+Os dois casos ganharam testes.
+
 ---
 
 ## 5. Como o extrato vira informação (sem digitar)

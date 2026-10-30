@@ -125,3 +125,18 @@ test('explica em português por que o banco não enviou os dados', async () => {
   assert.match(explicarFalhaItem({ executionStatus: 'ERROR', error: { code: 'UNEXPECTED_ERROR', message: 'x' } }), /não terminou.*UNEXPECTED_ERROR: x/);
   assert.equal(explicarFalhaItem(undefined), null);
 });
+
+test('pagamento do mês passado não quita a conta fixa deste mês', () => {
+  const hoje = '2026-10-29';
+  const brutas = ['2026-07-29', '2026-08-29', '2026-09-29'].map((d, i) => bruta(`c${i}`, d, false, 260, 'PAGAMENTO BOLETO CEMIG'));
+  let { dados } = importarExtrato(vazio(), brutas, hoje, null);
+  const conta = dados.contas.find((c) => c.auto);
+  assert.deepEqual([conta.vencimento, conta.paga], [hoje, false]);
+  ({ dados } = importarExtrato(dados, [bruta('c3', '2026-10-28', false, 262, 'PAGAMENTO BOLETO CEMIG')], hoje, null));
+  assert.equal(dados.contas.find((c) => c.id === conta.id).paga, true);
+});
+
+test('gasto repetido em meses não seguidos não vira conta fixa', () => {
+  const brutas = ['2026-04-04', '2026-07-04', '2026-10-04'].map((d, i) => bruta(`q${i}`, d, false, 480, 'PIX ENVIADO ASSISTENCIA TECNICA'));
+  assert.equal(importarExtrato(vazio(), brutas, HOJE, null).dados.contas.length, 0);
+});

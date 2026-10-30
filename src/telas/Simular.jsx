@@ -66,9 +66,14 @@ export default function Simular({ dados, acoes }) {
             ))}
           </ul>
           {resultado.ok && (
-            <button onClick={() => acoes.irPara('inicio')} className="mt-3 font-semibold text-marca">
-              Ver no início →
-            </button>
+            <div className="mt-3 flex gap-4">
+              <button onClick={() => acoes.irPara('extrato')} className="font-semibold text-marca">
+                Ver no extrato →
+              </button>
+              <button onClick={() => acoes.irPara('inicio')} className="font-semibold text-marca">
+                Ver no início →
+              </button>
+            </div>
           )}
         </section>
       )}

@@ -105,10 +105,11 @@ Toda a lógica fica em [`src/lib/financas.js`](src/lib/financas.js) (funções p
 ## Telas
 
 1. **Início**: semáforo, botões Entrou/Saiu/Pra mim, resumo de hoje, alertas, "Negócio x bolso"
-2. **Lançar**: valor, categoria, data, últimos lançamentos
-3. **Contas**: total a pagar em 30/60/90 dias, lista por vencimento, botão Pagar
-4. **Previsão**: gráfico de 30 dias, "como calculamos", simulador "E se…?", gastos do mês, evolução mensal
-5. **Ajustes**: nome, dinheiro em caixa hoje, aviso diário, exportar CSV, demonstração/apagar tudo
+2. **Extrato**: cada Pix recebido, conta paga e retirada, por dia, com filtros e o motivo de cada classificação
+3. **Lançar**: valor, categoria, data, últimos lançamentos (dinheiro vivo)
+4. **Contas**: total a pagar em 30/60/90 dias, lista por vencimento, botão Pagar
+5. **Previsão**: gráfico de 30 dias, "como calculamos", simulador "E se…?", gastos do mês, evolução mensal
+6. **Ajustes**: nome, dinheiro em caixa hoje, aviso diário, exportar CSV, demonstração/apagar tudo
 
 ## Base na pesquisa (6 respostas)
 

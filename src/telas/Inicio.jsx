@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import Icone from '../componentes/Icone.jsx';
 import { Semaforo, CartaoAlerta } from '../componentes/Status.jsx';
 import { alertas, resumoDoDia, saldoAtual, semaforo, totais } from '../lib/financas.js';
 import { mesDe, nomeMes } from '../lib/datas.js';
 import { paraRevisar } from '../lib/banco.js';
 import { tempoDesde } from '../componentes/ConexaoBanco.jsx';
+import { Linha, contaPagaPor } from './Extrato.jsx';
 import { reais, reaisCurto } from '../lib/formato.js';
 
 export default function Inicio({ dados, hoje, acoes, sincronizando }) {
@@ -16,6 +18,11 @@ export default function Inicio({ dados, hoje, acoes, sincronizando }) {
   const maxBarra = Math.max(doMes.lucro, doMes.retiradas, 1);
   const banco = dados.config.banco;
   const conferir = paraRevisar(dados);
+  const [aberto, setAberto] = useState(null);
+  const ultimas = [...dados.lancamentos]
+    .filter((l) => l.data <= hoje)
+    .sort((a, b) => b.data.localeCompare(a.data) || String(b.id).localeCompare(String(a.id)))
+    .slice(0, 5);
 
   return (
     <div className="space-y-4">
@@ -126,6 +133,29 @@ export default function Inicio({ dados, hoje, acoes, sincronizando }) {
           <ul className="space-y-2">
             {lista.map((a) => (
               <CartaoAlerta key={a.id} alerta={a} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {ultimas.length > 0 && (
+        <section>
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wide text-tinta-3">Últimas movimentações</h2>
+            <button onClick={() => acoes.irPara('extrato')} className="text-sm font-semibold text-marca">
+              Ver extrato →
+            </button>
+          </div>
+          <ul className="cartao divide-y divide-borda">
+            {ultimas.map((l) => (
+              <Linha
+                key={l.id}
+                l={l}
+                conta={contaPagaPor(l, dados.contas)}
+                aberto={aberto === l.id}
+                alternar={() => setAberto(aberto === l.id ? null : l.id)}
+                acoes={acoes}
+              />
             ))}
           </ul>
         </section>

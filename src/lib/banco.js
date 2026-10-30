@@ -65,6 +65,18 @@ export function chaveDe(b) {
 
 const soDigitos = (t) => String(t || '').replace(/\D/g, '');
 
+// Como o dinheiro passou (para mostrar no extrato), deduzido da descrição do banco.
+export function meioPagamento(b) {
+  const t = semAcento(b.descricao);
+  if (/VENDA|STONE|CIELO|REDE |GETNET|PAGSEGURO|MAQUININHA/.test(t) && b.credito) return 'Maquininha';
+  if (/\bPIX\b/.test(t)) return 'Pix';
+  if (/BOLETO|TITULO|\bDAS\b|SIMPLES NACIONAL|DARF|CONVENIO/.test(t)) return 'Boleto';
+  if (/DEB(ITO)? AUT/.test(t)) return 'Débito automático';
+  if (/CART(AO|\.)|COMPRA/.test(t)) return 'Cartão';
+  if (/\bTED\b|\bDOC\b|TRANSF/.test(t)) return 'Transferência';
+  return null;
+}
+
 // ---------- 1) normalização (formato Pluggy -> formato do app) ----------
 
 // Data local de Brasília: o banco manda horário UTC, e uma compra às 22h não pode cair no dia seguinte.
@@ -187,6 +199,7 @@ export function importarExtrato(dados, brutas, hoje, banco = null) {
       tipo: c.tipo,
       categoria: c.categoria,
       descricao: nomeAmigavel(b),
+      meio: meioPagamento(b),
       chave: chaveDe(b),
       motivo: c.motivo,
       revisar: c.confianca === 'baixa' && diferencaDias(b.data, hoje) <= DIAS_PARA_REVISAR,

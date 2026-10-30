@@ -7,6 +7,7 @@ import Previsao from './telas/Previsao.jsx';
 import Ajustes from './telas/Ajustes.jsx';
 import Confira from './telas/Confira.jsx';
 import Simular from './telas/Simular.jsx';
+import Extrato from './telas/Extrato.jsx';
 import { carregar, salvar, novoId, DADOS_VAZIOS } from './lib/armazenamento.js';
 import { gerarDemo } from './lib/demo.js';
 import { hojeISO } from './lib/datas.js';
@@ -19,6 +20,7 @@ import { avisoDoDiaSeNecessario } from './lib/aviso.js';
 
 const ABAS = [
   { id: 'inicio', rotulo: 'Início', icone: 'inicio' },
+  { id: 'extrato', rotulo: 'Extrato', icone: 'extrato' },
   { id: 'lancar', rotulo: 'Lançar', icone: 'lancar' },
   { id: 'contas', rotulo: 'Contas', icone: 'contas' },
   { id: 'previsao', rotulo: 'Previsão', icone: 'previsao' },
@@ -216,6 +218,7 @@ export default function App() {
         {tela === 'ajustes' && <Ajustes {...props} />}
         {tela === 'confira' && <Confira {...props} />}
         {tela === 'simular' && <Simular {...props} />}
+        {tela === 'extrato' && <Extrato {...props} />}
       </main>
 
       {aviso && (
@@ -227,7 +230,7 @@ export default function App() {
       )}
 
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-borda bg-superficie pb-[env(safe-area-inset-bottom)]">
-        <div className="mx-auto grid max-w-lg grid-cols-4">
+        <div className="mx-auto grid max-w-lg grid-cols-5">
           {ABAS.map((a) => (
             <button
               key={a.id}

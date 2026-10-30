@@ -185,6 +185,18 @@ O widget foi conferido no README do `react-pluggy-connect@2.12.0`: `<PluggyConne
 
 **Ajuste junto (baixa automática):** com o **mesmo favorecido**, o pagamento antecipado é aceito até **30 dias antes** do vencimento. Só pelo valor exato, continua ±10 dias. Na vida real o dono também paga antes.
 
+### D21. Aba "Extrato": ver cada Pix recebido e cada conta paga
+**Problema relatado:** depois de simular, não dava para ver no app os Pix recebidos e o que foi pago. Os movimentos só apareciam misturados na tela "Lançar", que parece um formulário, e as contas pagas ficavam no fim da tela Contas.
+
+**Decisão:** uma aba **Extrato** na barra inferior, parecida com o extrato do app do banco:
+- **resumo do mês** (Entrou / Saiu / Pra mim);
+- **filtros:** Tudo, Entrou, Saiu, Contas pagas, Pra mim;
+- movimentações **agrupadas por dia** (Hoje, Ontem…);
+- em cada item: **meio de pagamento** (Pix, Boleto, Débito automático, Cartão, Maquininha, Transferência; deduzido da descrição do banco e guardado em `meio`), a categoria e os selos **conta paga**, **simulado** e **confira**;
+- ao tocar no item: **o que o app entendeu**, **qual conta foi paga**, **por quê** e a **origem**, além de botões para corrigir ("É pessoal" / "É do negócio").
+
+A tela **Início** ganhou o bloco **"Últimas movimentações"** (as 5 últimas, com "Ver extrato"). O resultado do simulador leva direto ao extrato.
+
 ---
 
 ## 5. Como o extrato vira informação (sem digitar)
@@ -248,6 +260,7 @@ O saldo do app passa a **bater com o saldo do banco**: `saldo do banco + o que f
 | Tela | Mudança |
 |---|---|
 | Ajustes | Cartão **"Conta do banco"**: Conectar (real ou demonstração), banco conectado, última atualização, Atualizar agora, Desconectar. Campo "Seu CPF". |
+| Extrato (nova aba) | Todas as movimentações por dia, filtros (Entrou, Saiu, Contas pagas, Pra mim) e o detalhe de cada uma (ver D21). |
 | Início | Linha "Banco X · atualizado há N min". Cartão **"Confira N lançamentos"**. Os botões Entrou/Saiu passam a ser "para dinheiro vivo". |
 | Confira (nova) | Lista do que precisa de confirmação, com 1 toque por item. |
 | Lançar | Aviso "o que passa pelo banco entra sozinho; anote aqui só o dinheiro vivo". Ícone de banco nos lançamentos importados. |
